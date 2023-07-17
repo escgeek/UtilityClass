@@ -1,10 +1,8 @@
-/*------------------------------------------------------------------------+
-Author: Eric Clay (escgeek@gmail.com)
+/*--------------------------------------------------------------------------------------------------------------------+
+Author: Eric Clay (eric@ultrageek.com)
 
-Covering Classes: 
-UG_UtilityClass
-
-------------------------------------------------------------------------+*/
+Covering Classes: UG_UtilityClass
+--------------------------------------------------------------------------------------------------------------------+*/
 @isTest 
 public class UG_UtilityClassTest {
 
@@ -20,9 +18,12 @@ public class UG_UtilityClassTest {
         // Insert Record
         UG_UtilityClass.safeDML(accountList, 'Insert', 'Account', 'Test Method', 'Account', false);
         
-        // Update Record
-        UG_UtilityClass.safeDML(accountList, 'Update', 'Account', 'Test Method', 'Account', false);
+        // Update Record - Will throw an error
+        UG_UtilityClass.safeDML(accountList, 'Update', 'Account', 'Test Method'); // Test the 'short' method
         
+        // Upsert Record with Key
+        UG_UtilityClass.safeDML(accountList, 'Upsert2', 'Account', 'Test Method', 'Account', false, 'Id');
+
         // Time to throw an error
         a.Name = '========================================================================================================String longer than 255 characters=======================================================================================================================';
         
@@ -41,22 +42,50 @@ public class UG_UtilityClassTest {
         // Created, updated, deleted. Should be zero (0)
         Integer accountCount = [SELECT count() FROM Account];
         System.assertEquals(0, accountCount, 'Should be zero accounts after creating, updating, and then deleting Account record');
+        
 
-    }  
-
-    @isTest
-    static void handleGenericError_Test(){
-
-        test.startTest();
-        // Normal Record
-        UG_UtilityClass.handleGenericError('Account','methodName','shortDesc','404','errorMsg','actionType','0013t00002WDV53');
-        // Null Test
-        UG_UtilityClass.handleGenericError(null,null,null,null,null,null,null);
-        test.stopTest();
-
-        // Two Error records should have been created - one with values and another with null values
-        Integer genericErrorCount = [SELECT count() FROM Error__c];
-        System.assertEquals(2, genericErrorCount, 'Should be two error records');
     }
 
+    @isTest public static void errorMethod_Test(){
+        Id accountId = UG_UtilityClass.generateRecordId('Account');
+        test.startTest();
+        // No Return
+        Error__c returnError = UG_UtilityClass.createError(
+            'Account',
+            'className.methodName',
+            'Account Class',
+            'Callout Failed',
+            'Test Failed',
+            'Insert',
+            accountId
+        );
+        // Insert and Return record
+        Error__c insertError = UG_UtilityClass.createError(
+            'Account',
+            'className.methodName',
+            'Account Class',
+            'Callout Failed',
+            'Test Failed',
+            'Insert',
+            accountId,
+            true
+        );
+        test.stopTest();
+        Integer errorCount = [SELECT COUNT() FROM Error__c];
+        Assert.areEqual(1, errorCount, 'Only 1 record should be created');
+    }
+
+    @isTest static void utilityMethod_Test(){
+        test.startTest();
+        // Test creaeting a record id
+        Id accountId = UG_UtilityClass.generateRecordId('Account');
+
+        // Test random function
+        String random10 = UG_UtilityClass.random(); // Calls random() for coverage
+        String random6 = UG_UtilityClass.random(6); // Calls random() for coverage
+        test.stopTest();
+        // Test Results
+        System.assertEquals('001', String.valueOf(accountId).left(3));
+
+    }
 }
